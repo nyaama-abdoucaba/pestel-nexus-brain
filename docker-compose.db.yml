@@ -1,0 +1,79 @@
+services:
+  pestel-postgres:
+    image: postgres:16
+    container_name: pestel-postgres-local
+    restart: unless-stopped
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-pestel}
+      POSTGRES_USER: ${POSTGRES_USER:-pestel}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pestel_dev_password}
+    volumes:
+      - pestel_postgres_data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-pestel} -d ${POSTGRES_DB:-pestel}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pestel_db
+      - pestel_shared
+
+  pestel-pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pestel-pgadmin-local
+    restart: unless-stopped
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@pestel.local}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+    volumes:
+      - pestel_pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      pestel-postgres:
+        condition: service_healthy
+    networks:
+      - pestel_db
+
+  brain-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pestel-brain-api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-pestel}:${POSTGRES_PASSWORD:-pestel_dev_password}@pestel-postgres:5432/${POSTGRES_DB:-pestel}
+      OLLAMA_URL: http://host.docker.internal:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen3.5:9b}
+      # qwen3.5:9b est un modèle à raisonnement : sans ce réglage il consomme tout
+      # le budget de sortie dans le champ `thinking` et renvoie un `content` vide,
+      # donc zéro commentaire. Vérifié le 03/09/2026 avec
+      # `python -m app.linkedin_comments.check_ollama_format` : think=false garde
+      # la sortie structurée valide sur ce modèle précis.
+      OLLAMA_THINK: "false"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      pestel-postgres:
+        condition: service_healthy
+    networks:
+      - pestel_shared
+
+volumes:
+  pestel_postgres_data:
+  pestel_pgadmin_data:
+
+networks:
+  pestel_db:
+    driver: bridge
+  # Réseau partagé inter-stacks (créé une fois : docker network create pestel_shared).
+  pestel_shared:
+    external: true

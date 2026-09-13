@@ -1,0 +1,148 @@
+# Source de vérité des services locaux Pestel Nexus.
+# Renseigné depuis l'audit réel du 2026-06-29 (docker ps / lsof / docker exec / launchctl).
+# Spec : tasks/specs/2026-06-29-infra-local-source-of-truth.md
+#
+# Règle d'or des adresses :
+#   - navigateur / process natif      -> localhost:<port_host>
+#   - conteneur -> service même réseau -> <nom_service>:<port_internal>
+#   - conteneur -> hôte (Ollama, PG)   -> host.docker.internal:<port_host>  (Docker Desktop Mac)
+#   - conteneur -> conteneur autre stack -> réseau partagé pestel_shared, sinon host.docker.internal
+#
+# Ajouter un service = ajouter un bloc. Ne jamais coder un port en dur ailleurs en contradiction.
+# Ne jamais mettre de mot de passe en clair ici (les URLs DB restent sans credentials).
+
+services:
+  - name: pestel-postgres
+    role: PostgreSQL — base applicative LinkedIn (UI + runtime)
+    runtime: docker
+    compose: docker-compose.db.yml
+    container: pestel-postgres-local
+    port_internal: 5432
+    port_host: 5432
+    network: pestel_db          # + pestel_shared (cible)
+    url_browser: null
+    url_from_native: postgresql://<user>@localhost:5432/pestel
+    url_from_container: pestel-postgres:5432   # via pestel_shared ; sinon host.docker.internal:5432
+    url_from_n8n: pestel-postgres:5432
+    health:
+      type: tcp
+      target: localhost:5432
+    start: docker compose -f docker-compose.db.yml up -d
+    stop: docker compose -f docker-compose.db.yml stop
+    depends_on: []
+
+  - name: pestel-pgadmin
+    role: GUI d'administration PostgreSQL
+    runtime: docker
+    compose: docker-compose.db.yml
+    container: pestel-pgadmin-local
+    port_internal: 80
+    port_host: 5050
+    network: pestel_db
+    url_browser: http://localhost:5050
+    url_from_native: http://localhost:5050
+    url_from_container: pestel-pgadmin:80
+    url_from_n8n: null
+    health:
+      type: http
+      target: http://localhost:5050/misc/ping
+    start: docker compose -f docker-compose.db.yml up -d
+    stop: docker compose -f docker-compose.db.yml stop
+    depends_on: [pestel-postgres]
+
+  - name: n8n
+    role: Orchestrateur de workflows
+    runtime: docker
+    compose: ../n8n/docker-compose.yml
+    container: n8n-app
+    port_internal: 5678
+    port_host: 5678
+    network: n8n_net            # + pestel_shared (cible)
+    url_browser: http://localhost:5678
+    url_from_native: http://localhost:5678
+    url_from_container: host.docker.internal:5678
+    url_from_n8n: null
+    health:
+      type: http
+      target: http://localhost:5678/healthz
+    start: docker compose -f ../n8n/docker-compose.yml up -d
+    stop: docker compose -f ../n8n/docker-compose.yml stop n8n
+    depends_on: [n8n-postgres]
+
+  - name: n8n-postgres
+    role: Base interne n8n (workflows, credentials, executions)
+    runtime: docker
+    compose: ../n8n/docker-compose.yml
+    container: n8n-postgres
+    port_internal: 5432
+    port_host: null            # non publié : pas de conflit avec pestel-postgres
+    network: n8n_net
+    url_browser: null
+    url_from_native: null
+    url_from_container: postgres:5432   # alias de service interne au stack n8n
+    url_from_n8n: postgres:5432
+    health:
+      type: docker
+      target: n8n-postgres
+    start: docker compose -f ../n8n/docker-compose.yml up -d postgres
+    stop: docker compose -f ../n8n/docker-compose.yml stop postgres
+    depends_on: []
+
+  - name: valkey
+    role: Cache (ex-SearXNG) du stack n8n
+    runtime: docker
+    compose: ../n8n/docker-compose.yml
+    container: searxng-valkey
+    port_internal: 6379
+    port_host: null
+    network: n8n_net
+    url_browser: null
+    url_from_native: null
+    url_from_container: valkey:6379
+    url_from_n8n: valkey:6379
+    health:
+      type: docker
+      target: searxng-valkey
+    start: docker compose -f ../n8n/docker-compose.yml up -d valkey
+    stop: docker compose -f ../n8n/docker-compose.yml stop valkey
+    depends_on: []
+
+  - name: ollama
+    role: LLM local (GPU Metal)
+    runtime: native
+    manager: launchd            # com.ollama.ollama (Ollama.app) — PAS Homebrew
+    compose: null
+    container: null
+    port_internal: null
+    port_host: 11434
+    bind: 127.0.0.1
+    network: null
+    url_browser: http://localhost:11434
+    url_from_native: http://localhost:11434
+    url_from_container: http://host.docker.internal:11434   # Docker Desktop Mac uniquement
+    url_from_n8n: http://host.docker.internal:11434
+    health:
+      type: http
+      target: http://localhost:11434/api/version
+    start: open -a Ollama
+    stop: osascript -e 'quit app "Ollama"'
+    depends_on: []
+
+  - name: brain-api
+    role: FastAPI — runtime explicite de commentaires LinkedIn (Ollama + PostgreSQL)
+    runtime: docker
+    compose: docker-compose.db.yml
+    container: pestel-brain-api
+    port_internal: 8000
+    port_host: 8000
+    network: pestel_shared
+    url_browser: http://localhost:8000/health
+    url_from_native: http://localhost:8000
+    url_from_container: brain-api:8000
+    url_from_n8n: http://host.docker.internal:8000   # ou http://brain-api:8000, n8n-app est aussi sur pestel_shared
+    health:
+      type: http
+      target: http://localhost:8000/health
+    start: docker compose -f docker-compose.db.yml up -d brain-api
+    stop: docker compose -f docker-compose.db.yml stop brain-api
+    depends_on: [pestel-postgres]

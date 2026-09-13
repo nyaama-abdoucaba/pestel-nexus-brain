@@ -1,0 +1,44 @@
+.DS_Store
+*.log
+
+.env
+*.env
+.env.local
+.env.*.local
+
+.pytest_cache/
+__pycache__/
+*.pyc
+
+.vscode/
+
+venv/
+.venv/
+crew_service/venv/
+
+dist/
+build/
+.mypy_cache/
+.ruff_cache/
+
+node_modules/
+
+# Local working directories (not for the repo)
+ops/
+
+# n8n runtime data (pas les exports de workflows)
+n8n/.n8n/
+n8n/data/
+docker-compose.local.yml
+searxng-local/
+
+# Claude Code agent worktrees
+.claude/worktrees/
+
+# Données personnelles : jamais dans le dépôt.
+# Elles vivent dans ../donnees-privees/. Voir db/seeds/README.md.
+/sourcing*.csv
+/Annuaire*
+/db/imports/**/*.csv
+/db/seeds/*candidates*.sql
+/tasks/archives/evidence/

@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s \"https://b0.p.awsstatic.com/pricing/2.0/meteredUnitMaps/bedrock/bedrock/current/index.json\")",
+      "WebFetch(domain:aws.amazon.com)",
+      "Bash(curl -s -L \"https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonBedrock/current/index.json\")",
+      "Bash(python -c \"from app.agents import get_bedrock_llm, get_writer_llm; print\\(''bedrock:'', get_bedrock_llm\\(\\).model\\); print\\(''writer:'', get_writer_llm\\(\\).model\\)\")"
+    ]
+  }
+}

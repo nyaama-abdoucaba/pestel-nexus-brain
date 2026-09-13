@@ -1,0 +1,46 @@
+-- Exemple de seed de cibles LinkedIn. Personnages inventés.
+-- Le fichier réel vit hors du dépôt, il nomme des personnes existantes.
+-- Voir db/seeds/README.md.
+--
+-- entity_kind : 'person' ou 'organization'.
+-- category_slug : un slug défini par 002_target_categories.sql.
+-- Toute cible entre en 'candidate' avec scrape_enabled = false.
+
+BEGIN;
+
+WITH seed_data (name, linkedin_url, why_follow, category_slug, entity_kind) AS (
+  VALUES
+    ('Awa Diallo', 'https://www.linkedin.com/in/awa-diallo-exemple', 'Consultante fictive. Publie sur le cadrage de projets.', 'consultant', 'person'),
+    ('Jean Exemple', 'https://www.linkedin.com/in/jean-exemple', 'Consultant fictif. Écrit sur la conduite du changement.', 'consultant', 'person'),
+    ('Cabinet Fictif', 'https://www.linkedin.com/company/cabinet-fictif', 'Organisation inventée. Sert à illustrer entity_kind = organization.', 'cabinet_conseil', 'organization')
+),
+upserted_targets AS (
+  INSERT INTO linkedin_targets (
+    name, linkedin_url, why_follow, status, scrape_enabled, metadata
+  )
+  SELECT
+    name,
+    regexp_replace(btrim(linkedin_url), '/+$', ''),
+    why_follow,
+    'candidate',
+    false,
+    jsonb_build_object(
+      'source', 'exemple',
+      'entity_kind', entity_kind,
+      'verification', 'pending'
+    )
+  FROM seed_data
+  ON CONFLICT (linkedin_url) DO UPDATE
+  SET name = EXCLUDED.name,
+      why_follow = EXCLUDED.why_follow,
+      metadata = linkedin_targets.metadata || EXCLUDED.metadata
+  RETURNING id, linkedin_url
+)
+INSERT INTO linkedin_target_categories (linkedin_target_id, category_slug)
+SELECT target.id, seed.category_slug
+FROM upserted_targets AS target
+JOIN seed_data AS seed
+  ON target.linkedin_url = regexp_replace(btrim(seed.linkedin_url), '/+$', '')
+ON CONFLICT (linkedin_target_id, category_slug) DO NOTHING;
+
+COMMIT;
