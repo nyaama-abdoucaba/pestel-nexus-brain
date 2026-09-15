@@ -6,13 +6,14 @@
 |---|---|
 | Titre | Alignement de `pestel-nexus-brain` sur les cinq domaines du CCAR-F |
 | Code | CCAR |
-| Version | 1.2 |
-| Date | 2026-09-13 |
+| Version | 1.3 |
+| Date | 2026-09-15 |
 | Auteur | Abdoulaye, avec Claude Code |
-| Statut | arbitré, prêt pour le lot 0 (décisions en section 12) |
+| Statut | arbitré, lot 0 livré, lot 1 porté par EPIC-CCAR-CC |
 | Source normative | Claude Certified Architect Foundations, Exam Guide v1.0, juillet 2026 |
 | Dépôt cible | `/Users/abdoulaye/pestel-local/pestel-nexus-brain` |
 | Epic | `tasks/epics/2026-09-13-epic-ccar.md` |
+| Sous-epic du domaine 3 | `tasks/epics/2026-09-15-epic-ccar-cc.md` |
 
 ### Historique des versions
 
@@ -21,6 +22,7 @@
 | 1.0 | 2026-09-09 | première rédaction, domaines 1, 3, 4 et 5 |
 | 1.1 | 2026-09-10 | domaine 2 intégré, revue en deux voies, décisions Q1 à Q5 |
 | 1.2 | 2026-09-13 | point 12.2 tranché : dépôt atelier archivé, vitrine publique neuve. Lot L0 redéfini |
+| 1.3 | 2026-09-15 | exigences du domaine 3 corrigées d'après les chapitres 6 à 8 du livre communautaire. Lots L1, L2 et L2b regroupés sous EPIC-CCAR-CC |
 
 ## 2. Résumé exécutif
 
@@ -310,24 +312,43 @@ données de production et suffit à couvrir les cinq énoncés du domaine.
 
 ### 9.3 Domaine 3, configuration Claude Code et workflows
 
+Ces exigences ont été réécrites en version 1.3. La version 1.2 contenait quatre
+erreurs de diagnostic, relevées grâce aux notes d'Abdoulaye sur les chapitres 6,
+7 et 8 du livre communautaire, puis vérifiées dans la documentation officielle.
+
+| Erreur de la version 1.2 | Pourquoi elle était fausse |
+|---|---|
+| découper `CLAUDE.md` en fichiers `@import` pour alléger | un fichier importé se charge en entier au démarrage, le contexte ne baisse pas |
+| faire de la revue locale une commande | une commande tourne dans la session principale, une exploration verbeuse la pollue |
+| exiger les trois champs de frontmatter sur chaque skill | `context: fork` prive la skill de l'historique, il ne se justifie que pour une exploration |
+| vérifier le chargement avec `/memory` | `/memory` liste les emplacements, `/context` montre ce qui est chargé |
+
 | Code | Exigence | Pri. | Critère d'acceptation |
 |---|---|---|---|
-| F-3.1 | Découper `CLAUDE.md` en règles thématiques importées par `@import` | M | le fichier racine tient en une page, les règles vivent dans `.claude/rules/`, `/memory` montre la hiérarchie chargée |
-| F-3.2 | Créer des commandes de projet dans `.claude/commands/` | M | `/verify`, `/slice`, `/revue-locale` et `/dry-run` existent, sont versionnées, et s'exécutent |
-| F-3.3 | Déplacer les skills vers `.claude/skills/` avec frontmatter complet | M | chaque `SKILL.md` porte `context: fork`, `allowed-tools` et `argument-hint`, une skill verbeuse ne pollue plus la session principale |
-| F-3.4 | Écrire des règles conditionnées par chemin dans `.claude/rules/` | M | un fichier avec `paths: ["app/linkedin_comments/**"]` ne se charge qu'en éditant ces fichiers, vérifié par `/memory` |
-| F-3.5 | Écrire la règle de choix entre plan mode et exécution directe | S | une note liste trois tâches passées et le mode qui aurait convenu, avec la raison |
-| F-3.6 | Écrire le script de revue maison, lancé à la main, moteur Ollama par défaut | M | voir section 9.6.3 |
-| F-3.7 | Installer l'action officielle de revue, moteur Claude, déclenchée à chaque PR | M | voir section 9.6.4, constats publiés en commentaires en ligne sur une vraie PR |
+| F-3.1 | Supprimer les contradictions entre les niveaux de `CLAUDE.md` | M | la règle Git décrit branche et PR ; aucune consigne du `CLAUDE.md` projet ne contredit le `CLAUDE.md` utilisateur ; les préférences personnelles vivent dans `CLAUDE.local.md`, exclu de Git ; `/context` liste les fichiers attendus sous Memory files |
+| F-3.2 | Faire lire une seule source d'instructions partagées | M | `CLAUDE.md` importe `AGENTS.md` au lieu de le recopier ; aucun paragraphe dupliqué ; `CLAUDE.md` tient sous 200 lignes |
+| F-3.3 | Transformer les interdictions absolues en règles de permission | M | `.claude/settings.json` porte des règles `deny` ; aucune interdiction absolue ne reste en prose dans `CLAUDE.md` ; les règles `allow` obsolètes sont retirées |
+| F-3.4 | Réduire le contexte avec des règles conditionnées par chemin | M | au moins deux fichiers `.claude/rules/` avec `paths` ; chacun est absent de `/context` au démarrage et présent après lecture d'un fichier correspondant |
+| F-3.5 | Migrer les skills dans `.claude/skills/` avec un frontmatter justifié | M | les skills apparaissent dans le menu `/` ; `context: fork` porté par la seule skill d'exploration verbeuse ; chaque restriction d'outils est justifiée par écrit ; aucune skill personnelle ne porte le nom d'une skill projet |
+| F-3.6 | Réserver les commandes aux actions courtes | S | `/verify` existe dans `.claude/commands/` ; aucune tâche d'exploration n'est une commande |
+| F-3.7 | Choisir le mode d'exécution selon l'inconnu, pas selon la taille | S | chaque slice d'EPIC-CCAR-CC note le mode retenu et répond à deux questions : l'état cible est-il connu avant de commencer, faut-il choisir entre des approches aux conséquences différentes |
+| F-3.8 | Écrire le script de revue maison, voie A | M | voir section 9.6.3 |
+| F-3.9 | Installer l'action officielle de revue, voie B | M | voir section 9.6.4 |
 
-Note sur l'état constaté. Les skills vivent aujourd'hui dans `/skills`, hors de
-`.claude/`, et `.claude/skills/README.md` renvoie vers ce dossier. Claude Code ne
-charge donc pas ces skills comme des skills. Le frontmatter actuel n'utilise ni
-`context: fork` ni `allowed-tools`, qui sont deux points d'examen.
+Les priorités restent notées M pour indispensable et S pour souhaitable.
 
-Autre point constaté. Le fichier `CLAUDE.md` à la racine commence par le titre
-`# AGENTS.md`, et son contenu double `docs/AGENTS.md`. Le découpage de F-3.1
-résout cette duplication.
+État constaté le 2026-09-15, point de départ du sous-epic :
+
+- `CLAUDE.md` commence par le titre `# AGENTS.md` et diverge de `docs/AGENTS.md` sur 27 lignes.
+- La règle Git interdit encore branches et PR.
+- Le `CLAUDE.md` projet demande des réponses courtes et la lecture du minimum de
+  fichiers. Le `CLAUDE.md` utilisateur demande de montrer le code et d'expliquer
+  chaque terme. Les deux s'additionnent sans priorité : Claude peut suivre l'un ou
+  l'autre.
+- `.claude/settings.json` autorise deux commandes qui visent `app.agents`, un
+  module qui n'existe plus.
+- Les skills vivent dans `/skills`, où Claude Code ne les charge pas.
+- Ni `.claude/rules/`, ni `.claude/commands/`, ni `CLAUDE.local.md` n'existent.
 
 ### 9.4 Domaine 4, prompt engineering et sortie structurée
 
@@ -386,6 +407,11 @@ Enterprise sont couverts.
 Ce jeton reste nominatif. Il porte l'abonnement d'Abdoulaye, pas celui du dépôt.
 Le jour où quelqu'un d'autre pousse du code, il faudra une clé d'API partagée.
 
+Une limite ajoutée en version 1.3. Le mode `--bare` ne lit jamais la connexion par
+abonnement : l'aide de la version 2.1.260 indique que l'authentification passe
+strictement par `ANTHROPIC_API_KEY` ou `apiKeyHelper`. Un appel `--bare` n'est donc
+possible qu'avec le moteur Ollama, qui reçoit sa clé par variable d'environnement.
+
 Ce qui reste à la charge d'Abdoulaye : les minutes GitHub Actions, comptées sur son
 plan GitHub. Un dépôt privé consomme un quota mensuel, un dépôt public ne consomme
 rien.
@@ -427,14 +453,38 @@ Le script enchaîne cinq étapes.
 5. Il publie les constats sur la PR avec `gh pr comment`, puis sort en code 1 si un
    constat bloquant subsiste.
 
-La commande de base, avec les drapeaux que l'examen cite nommément :
+La commande de base, corrigée en version 1.3 d'après le chapitre 8 :
 
 ```bash
 claude -p "$(cat .claude/prompts/revue-fichier.md)" \
   --output-format json \
-  --json-schema .claude/schemas/constats.json \
-  --append-system-prompt "Tu relis un seul fichier. Ne signale rien qui dépasse ce fichier."
+  --json-schema "$(cat .claude/schemas/constats.json)" \
+  --append-system-prompt-file .claude/prompts/revue-systeme.md \
+  --permission-mode dontAsk \
+  --allowedTools "Read,Grep" \
+  --max-budget-usd 0.50
 ```
+
+Ce que chaque ajout apporte :
+
+| Drapeau | Rôle |
+|---|---|
+| `--permission-mode dontAsk` | refuse tout ce qui n'est pas pré-autorisé, au lieu d'attendre une confirmation que personne ne donnera |
+| `--allowedTools "Read,Grep"` | sous `dontAsk`, définit la liste exacte de ce qui s'exécute |
+| `--max-budget-usd` | plafonne la dépense dans le processus, valable seulement avec `-p` |
+| `--append-system-prompt-file` | ajoute les critères de revue sans remplacer le prompt système par défaut |
+
+Trois règles de lecture et d'enchaînement :
+
+- Le script lit le champ `structured_output`, pas le champ `result` qui porte la prose.
+- Le script teste le code de sortie : une authentification manquante s'écrit sur
+  la sortie standard et ressemblerait sinon à un constat.
+- Aucune passe n'utilise `--resume` ni `--continue`. Chaque revue est une session
+  neuve, sans lien avec la session qui a écrit le code.
+
+Le drapeau `--max-turns`, cité par le chapitre 8 et par la documentation GitHub
+Actions, n'apparaît pas dans l'aide de la version 2.1.260. Son existence sera
+vérifiée dans CCAR-006, avant de s'y fier.
 
 Les drapeaux `-p`, `--output-format`, `--json-schema`, `--resume`, `--fork-session`
 et `--agents` existent bien dans la version installée, 2.1.260. Ce point a été
@@ -446,7 +496,8 @@ avec la consigne de ne signaler que ce qui est nouveau ou toujours ouvert. L'exa
 teste ce point précis.
 
 Le moteur se change par une seule variable. `REVUE_MOTEUR=ollama` est le défaut et
-pose `ANTHROPIC_BASE_URL` vers le service local. `REVUE_MOTEUR=claude` bascule sur
+pose `ANTHROPIC_BASE_URL` vers le service local. Ce moteur peut ajouter `--bare`,
+qui ignore toute configuration locale et rend l'appel reproductible. `REVUE_MOTEUR=claude` bascule sur
 l'abonnement. Comparer les deux moteurs sur la même PR est un exercice d'examen à
 part entière.
 
@@ -495,14 +546,12 @@ tranches courtes.
 | Lot | Contenu | Domaines | Durée estimée | Dépend de |
 |---|---|---|---|---|
 | L0 | Atelier et vitrine : archiver le dépôt privé, publier un dépôt neuf sans données personnelles | 3 | une heure | rien, préalables faits le 2026-09-13 |
-| L1 | Configuration `.claude/` : règles, commandes, skills déplacées | 3 | une demi-journée | L0 |
-| L2 | Revue voie A : script maison, prompts, schémas, publication par `gh pr comment` | 3, 4 | une journée | L1 |
-| L2b | Revue voie B : `claude setup-token`, secret, workflow de l'action officielle | 3 | une heure | L0 |
-| L3 | Serveur `pestel-mcp` : quatre outils, deux ressources, erreurs structurées | 2 | une journée | L1 |
+| L1 | Configuration Claude Code et revue : sous-epic EPIC-CCAR-CC, slices CCAR-001 à CCAR-007. Remplace les anciens L1, L2 et L2b | 3, 4 | quatre à cinq jours | L0 |
+| L3 | Serveur `pestel-mcp` : quatre outils, deux ressources, erreurs structurées | 2 | une journée | CCAR-004 |
 | L4 | Boucle agentique et coordinateur dans `app/agents/` | 1, 2 | une à deux journées | L3 |
 | L5 | Hooks : barrière avant publication, normalisation des formats | 1 | une demi-journée | L4 |
 | L6 | Fiabilité : erreurs structurées, escalade, élagage du contexte | 5 | une journée | L4 |
-| L7 | Mesure : lots simulés, échantillonnage du juge, aiguillage des outils | 2, 4, 5 | une journée | L2, L6 |
+| L7 | Mesure : lots simulés, échantillonnage du juge, aiguillage des outils | 2, 4, 5 | une journée | L1, L6 |
 
 Le lot 3 passe avant le lot 4 pour une raison de dépendance. Les sous-agents du
 coordinateur ont besoin d'outils à se répartir. Sans serveur MCP, l'exigence F-2.3
@@ -548,13 +597,15 @@ bascule devient une décision fondée sur des mesures, pas un pari.
 | Code de n8n | aucune modification | section 4.3 |
 | Frontière de revue | de vraies branches et de vraies PR sur GitHub, la simulation est abandonnée | section 9.6, lot L0 |
 | Moteur de revue | les deux voies coexistent : script maison sur Ollama, action officielle sur Claude | section 9.6 |
-| Facturation de la revue | l'abonnement Pro couvre les deux voies, aucune clé d'API | section 9.6.1 |
+| Facturation de la revue | l'abonnement Pro couvre les deux voies, aucune clé d'API, sauf pour un appel `--bare` réservé au moteur Ollama | section 9.6.1 |
 | Escalade | trois déclencheurs : le juge rejette deux fois, la politique est muette, le moteur n'avance plus | exigence F-5.2 |
 | Ordre des lots | L0 à L7 tels qu'écrits | section 10.1 |
 | Visibilité du dépôt | passage en public voulu par Abdoulaye | section 12.2 |
 | Méthode de publication | dépôt neuf, l'ancien renommé `pestel-nexus-brain-atelier` puis archivé | section 12.2, lot L0 |
 | Nom de la vitrine | `pestel-nexus-brain` | section 12.2 |
 | Preuves de run | hors du dépôt, dans `../donnees-privees/evidence/` | `tasks/evidence/README.md` |
+| Structure du domaine 3 | sous-epic EPIC-CCAR-CC, qui remplace L1, L2 et L2b, validé le 2026-09-15 | section 9.3, section 10.1 |
+| Support de révision du domaine 3 | notes d'Abdoulaye sur les chapitres 6, 7 et 8 du livre communautaire | annexe B |
 
 ### 12.2 Décision du 2026-09-13 : les données personnelles avant le passage en public
 
@@ -606,13 +657,13 @@ L'exécution est décrite dans la spec du lot L0 :
 | 2.3 Distribution des outils et `tool_choice` | F-2.3 | définitions de sous-agents, test de refus |
 | 2.4 Intégration MCP dans Claude Code | F-2.4 | `.mcp.json`, `~/.claude.json` |
 | 2.5 Outils natifs | F-2.5 | note de choix entre `Grep` et outils MCP |
-| 3.1 Hiérarchie `CLAUDE.md` | F-3.1 | `CLAUDE.md`, `.claude/rules/` |
-| 3.2 Commandes et skills | F-3.2, F-3.3 | `.claude/commands/`, `.claude/skills/` |
+| 3.1 Hiérarchie `CLAUDE.md` | F-3.1, F-3.2, F-3.3 | `CLAUDE.md`, `CLAUDE.local.md`, `.claude/settings.json` |
+| 3.2 Commandes et skills | F-3.5, F-3.6 | `.claude/skills/`, `.claude/commands/verify.md` |
 | 3.3 Règles par chemin | F-3.4 | `.claude/rules/*.md` avec `paths` |
-| 3.4 Plan mode contre exécution directe | F-3.5 | note de décision |
-| 3.5 Raffinement itératif | F-4.2, F-4.4 | catalogue d'exemples, boucle de relance |
-| 3.6 Claude Code en CI/CD | F-3.6 | `scripts/review.sh`, `gh pr diff`, `gh pr comment` |
-| 3.6 Claude Code en CI/CD | F-3.7 | `.github/workflows/`, `CLAUDE_CODE_OAUTH_TOKEN` |
+| 3.4 Plan mode contre exécution directe | F-3.7 | mode noté dans chaque slice d'EPIC-CCAR-CC |
+| 3.5 Raffinement itératif | F-3.7, F-4.2, F-4.4 | mode noté dans les slices, catalogue d'exemples, boucle de relance |
+| 3.6 Claude Code en CI/CD | F-3.8 | `scripts/review.sh`, `gh pr diff`, `gh pr comment` |
+| 3.6 Claude Code en CI/CD | F-3.9 | `.github/workflows/`, `CLAUDE_CODE_OAUTH_TOKEN` |
 | 4.1 Critères explicites | F-4.1 | `.claude/prompts/revue-fichier.md` |
 | 4.2 Few-shot | F-4.2 | `app/linkedin_comments/prompts.py` |
 | 4.3 Sortie structurée par outil | F-4.3 | `ollama_anthropic.py`, `check_anthropic_compat.py` |
@@ -634,3 +685,7 @@ L'exécution est décrite dans la spec du lot L0 :
 - Référence Python du Claude Agent SDK : https://code.claude.com/docs/en/agent-sdk/python
 - Claude Code dans GitHub Actions : https://code.claude.com/docs/en/github-actions
 - Relevés machine du 2026-09-09 : `ollama` 0.23.2, `claude` 2.1.260, drapeaux CLI vérifiés par `claude --help`.
+- Livre communautaire de préparation au CCAR-F, chapitres 6, 7 et 8, notes et traductions d'Abdoulaye : `~/Desktop/Formation Claude/preparation du CCAR-F/`.
+- Mémoire de Claude Code, `CLAUDE.md` et règles : https://code.claude.com/docs/en/memory
+- Skills : https://code.claude.com/docs/en/skills
+- Relevé machine du 2026-09-15 : `--bare`, `--permission-mode` et ses six valeurs, `--max-budget-usd` et `--agents` présents dans l'aide de la 2.1.260 ; `--max-turns` absent de l'aide.

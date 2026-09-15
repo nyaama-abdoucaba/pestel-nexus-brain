@@ -1,5 +1,17 @@
 # Backlog
 
+## Certification CCAR-F
+
+Epic : `tasks/epics/2026-09-13-epic-ccar.md`. Découpage juste à temps : seul le lot
+en cours porte une spec.
+
+| Slice | Statut | Suite |
+|---|---|---|
+| CCAR-000 | ✅ done | Atelier archivé, vitrine publique neuve, aucune donnée nominative publiée |
+| CCAR-001 | todo | `CLAUDE.md` sans contradiction. Sous-epic `tasks/epics/2026-09-15-epic-ccar-cc.md` |
+| CCAR-002 à CCAR-007 | todo | Permissions, règles `paths`, skills, revue voies A et B. Voir le sous-epic |
+| L3 à L7 | en attente | Voir l'epic parent |
+
 ## Runtime de commentaires LinkedIn
 
 | Slice | Statut | Suite |
