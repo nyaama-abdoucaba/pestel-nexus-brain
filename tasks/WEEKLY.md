@@ -4,6 +4,8 @@
 
 | Slice | Statut | Prochaine action |
 |---|---|---|
+| CCAR-000 | ✅ done | Vitrine publique en ligne, atelier archivé. Suite : L1, en commençant par la règle Git de `CLAUDE.md` |
+| EPIC-CCAR-CC | validé | Ouvrir CCAR-001 : deux décisions à prendre sur `CLAUDE.md` et `CLAUDE.local.md` |
 | BRAIN-API-DOCKER | ✅ done | `brain-api` conteneurisé, démarré par `stack.sh start` |
 | LCR-009 | prêt pour test manuel | Lancer un échantillon depuis n8n (le port mort est corrigé), vérifier le digest v2 |
 | LCR-011 | ✅ done | Déduplication n8n basée sur `linkedin_comment_runs.content_hash` |
